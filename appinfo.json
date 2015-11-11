@@ -1,0 +1,41 @@
+{
+    "appKeys": {
+        "KEY_DEFINITION": 1,
+        "KEY_REQUEST_TYPE": 2,
+        "KEY_RESEND_REQUEST": 4,
+        "KEY_USER_ID": 3,
+        "KEY_WORD": 0
+    },
+    "capabilities": [
+        "configurable"
+    ],
+    "companyName": "caleb_bryant@earthlink.net",
+    "longName": "FlashFace",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/up.png",
+                "name": "IMAGE_UP",
+                "type": "png"
+            },
+            {
+                "file": "images/down.png",
+                "name": "IMAGE_DOWN",
+                "type": "png"
+            }
+        ]
+    },
+    "sdkVersion": "3",
+    "shortName": "FlashFace",
+    "targetPlatforms": [
+        "aplite",
+        "basalt",
+        "chalk"
+    ],
+    "uuid": "fda6051a-c35e-4d3e-9de3-cbcaae1e2ba0",
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": false
+    }
+}
