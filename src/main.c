@@ -2,9 +2,11 @@
 
 #define KEY_WORD 0
 #define KEY_DEFINITION 1
-#define KEY_REQUEST_TYPE 2
+#define KEY_REQUEST_WORD 2
 #define KEY_USER_ID 3
 #define KEY_RESEND_REQUEST 4
+#define KEY_WORD_ID 5
+#define KEY_RESPONSE 6
 
 static Window *s_main_window;
 static Window *s_definition_window;
@@ -24,43 +26,110 @@ static bool signed_in;
 static char word_buffer[20];
 static char user_id[20];
 static char definition_buffer[200];
-
+static char word_id[10];
 static bool requested_word;
-static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
+
+static void send_int(int key, int value) {
+  DictionaryIterator *iter;
+  app_message_outbox_begin(&iter);
+  dict_write_int(iter, key, &value, sizeof(int), true);
+  app_message_outbox_send();
+}
+
+static void definition_up_click_handler(ClickRecognizerRef recognizer, void *context) {
   // Do something
   // Begin dictionary
   DictionaryIterator *iter;
   app_message_outbox_begin(&iter);
 
   // Add a key-value pair
-  dict_write_uint8(iter, KEY_REQUEST_TYPE, 2);
+  dict_write_uint8(iter, KEY_RESPONSE, 4);
+  dict_write_cstring(iter, KEY_WORD_ID, word_id);
 
   // Send the message!
   app_message_outbox_send();
   
   has_word = false;
+  send_int(KEY_REQUEST_WORD,0);
   window_stack_pop(true);
 }
 
-static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
+static void definition_long_up_handler(ClickRecognizerRef recognizer, void *context) {
   // Do something
   // Begin dictionary
   DictionaryIterator *iter;
   app_message_outbox_begin(&iter);
 
   // Add a key-value pair
-  dict_write_uint8(iter, KEY_REQUEST_TYPE, 1);
+  dict_write_uint8(iter, KEY_RESPONSE, 5);
+  dict_write_cstring(iter, KEY_WORD_ID, word_id);
 
   // Send the message!
   app_message_outbox_send();
   
   has_word = false;
+  send_int(KEY_REQUEST_WORD,0);
+  window_stack_pop(true);
+}
+
+static void definition_long_down_handler(ClickRecognizerRef recognizer, void *context) {
+  // Do something
+  // Begin dictionary
+  DictionaryIterator *iter;
+  app_message_outbox_begin(&iter);
+
+  // Add a key-value pair
+  dict_write_uint8(iter, KEY_RESPONSE, 0);
+  dict_write_cstring(iter, KEY_WORD_ID, word_id);
+
+  // Send the message!
+  app_message_outbox_send();
+  
+  has_word = false;
+  send_int(KEY_REQUEST_WORD,0);
+  window_stack_pop(true);
+}
+
+static void definition_select_click_handler(ClickRecognizerRef recognizer, void *context) {
+  // Begin dictionary
+  DictionaryIterator *iter;
+  app_message_outbox_begin(&iter);
+
+  // Add a key-value pair
+  dict_write_uint8(iter, KEY_RESPONSE, 3);
+  dict_write_cstring(iter, KEY_WORD_ID, word_id);
+
+  // Send the message!
+  app_message_outbox_send();
+  
+  has_word = false;
+  send_int(KEY_REQUEST_WORD,0);
+  window_stack_pop(true);
+}
+
+static void definition_down_click_handler(ClickRecognizerRef recognizer, void *context) {
+  // Do something
+  // Begin dictionary
+  DictionaryIterator *iter;
+  app_message_outbox_begin(&iter);
+
+  // Add a key-value pair
+  dict_write_uint8(iter, KEY_RESPONSE, 1);
+  dict_write_cstring(iter, KEY_WORD_ID, word_id);
+
+  // Send the message!
+  app_message_outbox_send();
+  
+  has_word = false;
+  send_int(KEY_REQUEST_WORD,0);
   window_stack_pop(true);
 }
 
 void definition_click_config_provider(void *context) {
-  window_single_click_subscribe(BUTTON_ID_DOWN, (ClickHandler) down_click_handler);
-  window_single_click_subscribe(BUTTON_ID_UP, (ClickHandler) up_click_handler);
+  window_single_click_subscribe(BUTTON_ID_DOWN, (ClickHandler) definition_down_click_handler);
+  window_single_click_subscribe(BUTTON_ID_UP, (ClickHandler) definition_up_click_handler);
+  window_long_click_subscribe(BUTTON_ID_UP, 300, (ClickHandler) definition_long_up_handler, NULL);
+  window_long_click_subscribe(BUTTON_ID_DOWN, 300, (ClickHandler) definition_long_down_handler, NULL);
 }
 
 static void definition_window_load(Window * window) {
@@ -111,13 +180,6 @@ static void definition_window_unload(Window * window) {
     action_bar_layer_destroy(action_bar);
 }
 
-static void send_int(int key, int value) {
-  DictionaryIterator *iter;
-  app_message_outbox_begin(&iter);
-  dict_write_int(iter, key, &value, sizeof(int), true);
-  app_message_outbox_send();
-}
-
 static void draw_indicator_proc(Layer *this_layer, GContext *ctx) {
   // Draw things here using ctx
   if (has_word) {
@@ -152,7 +214,7 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
     } else {
       // Otherwise get one
       APP_LOG(APP_LOG_LEVEL_INFO, "Requesting word");
-      send_int(KEY_REQUEST_TYPE,0);
+      send_int(KEY_REQUEST_WORD,0);
       // Really this just means we have requested a word
       requested_word = true;
     }
@@ -180,14 +242,19 @@ static void update_time() {
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   update_time();
-  // Get weather update every 30 minutes
-  if(tick_time->tm_min % 30 == 0) {
+  // Get word update every 10 minutes
+  APP_LOG(APP_LOG_LEVEL_INFO, "Ticked!");
+
+
+  if(tick_time->tm_min % 10 == 0 && !has_word) {
     // Begin dictionary
     DictionaryIterator *iter;
     app_message_outbox_begin(&iter);
 
     // Add a key-value pair
-    dict_write_uint8(iter, KEY_REQUEST_TYPE, 0);
+    dict_write_uint8(iter, KEY_REQUEST_WORD, 0);
+    APP_LOG(APP_LOG_LEVEL_INFO, "Requested Word!");
+
 
     // Send the message!
     app_message_outbox_send();
@@ -248,18 +315,27 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
   Tuple *definition_tuple = dict_find(iterator, KEY_DEFINITION);
   Tuple *user_id_tuple = dict_find(iterator, KEY_USER_ID);
   Tuple *resend_request_tuple = dict_find(iterator, KEY_RESEND_REQUEST);
+  Tuple *word_id_tuple = dict_find(iterator, KEY_WORD_ID);
+  
   // If all data is available, use it
-  if(word_tuple && definition_tuple && !has_word) {
+  if(word_tuple && definition_tuple && word_id_tuple && !has_word) {
     // Check if there's a new word
     if (strcmp(word_tuple->value->cstring, "") != 0) {
       snprintf(word_buffer, sizeof(word_buffer), "%s", word_tuple->value->cstring);
       snprintf(definition_buffer, sizeof(definition_buffer), "%s", definition_tuple->value->cstring);
       text_layer_set_text(s_flash_layer, word_buffer);
       has_word = true;
-      requested_word = false;
-      APP_LOG(APP_LOG_LEVEL_INFO, "Requesting word");
-      // Vibrate!
+      
+      snprintf(word_id, sizeof(word_id), "%s", word_id_tuple->value->cstring);
+      APP_LOG(APP_LOG_LEVEL_INFO, "Recieved word Id");
+      APP_LOG(APP_LOG_LEVEL_INFO, word_id);
+      // Vibrate if not requested by user or the user has just interacted with app
       //vibes_short_pulse();
+      
+      if (!requested_word) {
+        vibes_short_pulse();
+      }
+      requested_word = false;
     }
   }
   else if (user_id_tuple) {

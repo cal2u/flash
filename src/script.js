@@ -9,9 +9,9 @@ var xhrRequest = function (url, type, callback) {
 
 var user_id = "";
 
-function sendResult(result) {
+function sendResult(result, wid) {
   // We will request the word here
-  var url = 'http://flashcardkitties.com/query.php?id='+user_id+'&r='+result;
+  var url = 'http://flashcardkitties.com/query.php?id='+user_id+'&wid='+wid+'&r='+result;
   console.log(url);
   xhrRequest(url, 'GET', 
     function(responseText) {
@@ -59,11 +59,12 @@ function getWord() {
       // And a definition
       var definition = json.definition;
       //console.log("definition is: "+definition);
-      
+      var wid = json.wid;
       // Assemble dictionary using our keys
       var dictionary = {
         'KEY_WORD': word,
-        'KEY_DEFINITION': definition
+        'KEY_DEFINITION': definition,
+        'KEY_WORD_ID': wid
       };
 
       // Send to Pebble
@@ -83,17 +84,16 @@ function getWord() {
 Pebble.addEventListener('appmessage',
   function(e) {
     var json = e.payload;
-    if (json["KEY_REQUEST_TYPE"] === 0) {
+    if (json.hasOwnProperty("KEY_REQUEST_WORD")) {
         // update
         console.log("update requested");
         getWord(); 
     }
-    // Good thing happened
-    else if (json["KEY_REQUEST_TYPE"] === 1) {
-      sendResult(1);
+    else if (json.hasOwnProperty("KEY_RESPONSE")) {
+      sendResult(json.KEY_RESPONSE, json.KEY_WORD_ID);
     }
     else if (json.hasOwnProperty("KEY_USER_ID")) {
-      user_id = json["KEY_USER_ID"];
+      user_id = json.KEY_USER_ID;
       console.log("uid set to "+user_id);
     }
   }                     

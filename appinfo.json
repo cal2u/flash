@@ -1,10 +1,12 @@
 {
     "appKeys": {
         "KEY_DEFINITION": 1,
-        "KEY_REQUEST_TYPE": 2,
+        "KEY_REQUEST_WORD": 2,
         "KEY_RESEND_REQUEST": 4,
+        "KEY_RESPONSE": 6,
         "KEY_USER_ID": 3,
-        "KEY_WORD": 0
+        "KEY_WORD": 0,
+        "KEY_WORD_ID": 5
     },
     "capabilities": [
         "configurable"
